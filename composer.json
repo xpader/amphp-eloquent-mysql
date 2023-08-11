@@ -1,5 +1,5 @@
 {
-	"name": "pader/amphp-mysql-eloquent",
+	"name": "pader/amphp-eloquent-mysql",
 	"description": "Async/coroutine amphp mysql eloquent adapter.",
 	"type": "library",
 	"license": "MIT",
