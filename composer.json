@@ -1,0 +1,22 @@
+{
+	"name": "pader/amphp-mysql-eloquent",
+	"description": "Async/coroutine amphp mysql eloquent adapter.",
+	"type": "library",
+	"license": "MIT",
+	"autoload": {
+		"psr-4": {
+			"AmphpEloquentMysql\\": "src/"
+		}
+	},
+	"authors": [
+		{
+			"name": "pader",
+			"email": "ypnow@163.com"
+		}
+	],
+	"require": {
+		"illuminate/database": "^10.18",
+		"amphp/mysql": "^3.0"
+	},
+	"minimum-stability": "beta"
+}
