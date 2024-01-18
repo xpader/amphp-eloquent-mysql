@@ -4,6 +4,7 @@ namespace AmphpEloquentMysql;
 
 use Amp\Mysql\MysqlConfig;
 use Amp\Mysql\MysqlConnectionPool;
+use Amp\Mysql\MysqlResult;
 use Amp\Mysql\MysqlTransaction;
 use Amp\Sql\Common\ConnectionPool;
 use Closure;
@@ -48,9 +49,41 @@ class Connection extends MySqlConnection
 	/**
 	 * @return MysqlConnectionPool|MysqlTransaction
 	 */
-	protected function getConn()
+	private function getConn()
 	{
 		return $this->executor->get();
+	}
+
+	/**
+	 * Determine if the connected database is a MariaDB database.
+	 *
+	 * @return bool
+	 */
+	//public function isMaria()
+	//{
+	//	return str_contains($this->getConn()->query('SELECT VERSION()')->fetchRow()['VERSION()'], 'MariaDB');
+	//}
+
+	/**
+	 * Run an insert statement against the database.
+	 *
+	 * @param  string  $query
+	 * @param  array  $bindings
+	 * @return MysqlResult
+	 */
+	public function insertStatement($query, $bindings = [])
+	{
+		return $this->rawStatement($query, $bindings);
+	}
+
+	/**
+	 * Get the default post processor instance.
+	 *
+	 * @return \Illuminate\Database\Query\Processors\MySqlProcessor
+	 */
+	protected function getDefaultPostProcessor()
+	{
+		return new Processor();
 	}
 
 	protected function run($query, $bindings, Closure $callback)
@@ -84,9 +117,6 @@ class Connection extends MySqlConnection
 
 	public function select($query, $bindings = [], $useReadPdo = true)
 	{
-		//$backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
-		//print_r($backtrace);
-
 		return $this->run($query, $bindings, function ($query, $bindings) use ($useReadPdo) {
 			if ($this->pretending()) {
 				return [];
@@ -102,6 +132,33 @@ class Connection extends MySqlConnection
 			}
 
 			return $rows;
+		});
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function selectResultSets($query, $bindings = [], $useReadPdo = true)
+	{
+		return $this->run($query, $bindings, function ($query, $bindings) use ($useReadPdo) {
+			if ($this->pretending()) {
+				return [];
+			}
+
+			$statement = $this->getConn()->prepare($query);
+			$result = $statement->execute($this->prepareBindings($bindings));
+
+			$sets = [];
+
+			do {
+				$rows = [];
+				foreach ($result as $row) {
+					$rows[] = $row;
+				}
+				$sets[] = $rows;
+			} while ($result = $result->getNextResult());
+
+			return $sets;
 		});
 	}
 
@@ -124,7 +181,14 @@ class Connection extends MySqlConnection
 		}
 	}
 
-	public function statement($query, $bindings = [])
+	/**
+	 * Execute an SQL statement and return the raw result.
+	 *
+	 * @param  string  $query
+	 * @param  array  $bindings
+	 * @return \Amp\Mysql\MysqlResult
+	 */
+	public function rawStatement($query, $bindings = [])
 	{
 		return $this->run($query, $bindings, function ($query, $bindings) {
 			if ($this->pretending()) {
@@ -135,9 +199,13 @@ class Connection extends MySqlConnection
 
 			$this->recordsHaveBeenModified();
 
-			$result = $statement->execute($this->prepareBindings($bindings));
-			return $result->getRowCount() > 0;
+			return $statement->execute($this->prepareBindings($bindings));
 		});
+	}
+
+	public function statement($query, $bindings = [])
+	{
+		return $this->rawStatement($query, $bindings)->getRowCount() > 0;
 	}
 
 	public function affectingStatement($query, $bindings = [])

@@ -10,5 +10,5 @@ class PostError extends Model {
 
 }
 
-$item = PostError::query()->first();
+$item = PostError::query()->limit(2)->get()->toArray();
 print_r($item);
