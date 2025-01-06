@@ -6,7 +6,7 @@ use Amp\Mysql\MysqlConfig;
 use Amp\Mysql\MysqlConnectionPool;
 use Amp\Mysql\MysqlResult;
 use Amp\Mysql\MysqlTransaction;
-use Amp\Sql\Common\ConnectionPool;
+use Amp\Sql\Common\SqlCommonConnectionPool;
 use Closure;
 use Illuminate\Database\MySqlConnection;
 use Illuminate\Database\QueryException;
@@ -36,14 +36,28 @@ class Connection extends MySqlConnection
 			$conn = $conn->withCharset($config['charset'], $config['collation']);
 		}
 
-		$maxConnection = $config['pool']['max_connections'] ?? ConnectionPool::DEFAULT_MAX_CONNECTIONS;
-		$maxIdleTime = $config['pool']['max_idle_time'] ?? ConnectionPool::DEFAULT_IDLE_TIMEOUT;
+		$maxConnection = $config['pool']['max_connections'] ?? SqlCommonConnectionPool::DEFAULT_MAX_CONNECTIONS;
+		$maxIdleTime = $config['pool']['max_idle_time'] ?? SqlCommonConnectionPool::DEFAULT_IDLE_TIMEOUT;
 
 		$this->connection = new MysqlConnectionPool($conn, $maxConnection, $maxIdleTime);
 
 		parent::__construct(function() {}, $config['database'], $config['prefix'], $config);
 
 		$this->executor ??= new FiberLocal(fn() => $this->connection);
+	}
+
+	/**
+	 * Get amphp mysql connection pool
+	 *
+	 * ```
+	 * DB::getConnections()['default']->getPool();
+	 * ```
+	 *
+	 * @return MysqlConnectionPool
+	 */
+	public function getPool()
+	{
+		return $this->connection;
 	}
 
 	/**
