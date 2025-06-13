@@ -46,6 +46,29 @@ class Connection extends MySqlConnection
 		$this->executor ??= new FiberLocal(fn() => $this->connection);
 	}
 
+    /**
+     * @inheritDoc
+     */
+    public function insert($query, $bindings = [], $sequence = null)
+    {
+        return $this->run($query, $bindings, function ($query, $bindings) {
+            if ($this->pretending()) {
+                return true;
+            }
+
+			$statement = $this->getConn()->prepare($query);
+			$params = $this->prepareBindings($bindings);
+
+            $this->recordsHaveBeenModified();
+
+            $result = $statement->execute($params);
+
+            $this->lastInsertId = $result->getLastInsertId();
+
+            return $result->getRowCount() > 0;
+        });
+    }
+
 	/**
 	 * Get amphp mysql connection pool
 	 *
@@ -69,31 +92,9 @@ class Connection extends MySqlConnection
 	}
 
 	/**
-	 * Determine if the connected database is a MariaDB database.
-	 *
-	 * @return bool
-	 */
-	//public function isMaria()
-	//{
-	//	return str_contains($this->getConn()->query('SELECT VERSION()')->fetchRow()['VERSION()'], 'MariaDB');
-	//}
-
-	/**
-	 * Run an insert statement against the database.
-	 *
-	 * @param  string  $query
-	 * @param  array  $bindings
-	 * @return MysqlResult
-	 */
-	public function insertStatement($query, $bindings = [])
-	{
-		return $this->rawStatement($query, $bindings);
-	}
-
-	/**
 	 * Get the default post processor instance.
 	 *
-	 * @return \Illuminate\Database\Query\Processors\MySqlProcessor
+	 * @return Processor
 	 */
 	protected function getDefaultPostProcessor()
 	{
@@ -200,7 +201,7 @@ class Connection extends MySqlConnection
 	 *
 	 * @param  string  $query
 	 * @param  array  $bindings
-	 * @return \Amp\Mysql\MysqlResult
+	 * @return MysqlResult
 	 */
 	public function rawStatement($query, $bindings = [])
 	{
@@ -315,7 +316,6 @@ class Connection extends MySqlConnection
 		}
 	}
 
-
 	public function commit()
 	{
 		if ($this->transactionLevel() == 1) {
@@ -355,11 +355,7 @@ class Connection extends MySqlConnection
 	}
 
 	/**
-	 * Create a transaction within the database.
-	 *
-	 * @return void
-	 *
-	 * @throws \Throwable
+	 * @inheritDoc
 	 */
 	protected function createTransaction()
 	{
@@ -372,11 +368,7 @@ class Connection extends MySqlConnection
 	}
 
 	/**
-	 * Create a save point within the database.
-	 *
-	 * @return void
-	 *
-	 * @throws \Throwable
+	 * @inheritDoc
 	 */
 	protected function createSavepoint()
 	{

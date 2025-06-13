@@ -20,7 +20,7 @@ class Processor extends \Illuminate\Database\Query\Processors\MySqlProcessor
 	public function processInsertGetId(Builder $query, $sql, $values, $sequence = null)
 	{
 		/** @var MysqlResult $result */
-		$result = $query->getConnection()->insertStatement($sql, $values);
+		$result = $query->getConnection()->rawStatement($sql, $values);
 
 		$id = $result->getLastInsertId();
 
