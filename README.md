@@ -47,3 +47,9 @@ DB::swap($capsule->getDatabaseManager());
 
 $item = DB::table('users')->first();
 ```
+
+## Used By
+
+### Wind Framework Component
+- https://github.com/wind-framework/eloquent
+- https://wind-framework.github.io/docs/#/v1/zh-cn/component/eloquent
