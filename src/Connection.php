@@ -143,7 +143,7 @@ class Connection extends MySqlConnection
 			$rows = [];
 
 			foreach ($result as $row) {
-				$rows[] = $row;
+				$rows[] = (object)$row;
 			}
 
 			return $rows;
@@ -168,7 +168,7 @@ class Connection extends MySqlConnection
 			do {
 				$rows = [];
 				foreach ($result as $row) {
-					$rows[] = $row;
+					$rows[] = (object)$row;
 				}
 				$sets[] = $rows;
 			} while ($result = $result->getNextResult());
@@ -192,7 +192,7 @@ class Connection extends MySqlConnection
 
 
 		foreach ($statement as $row) {
-			yield $row;
+			yield (object)$row;
 		}
 	}
 
